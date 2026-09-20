@@ -1,238 +1,208 @@
 import React, { useEffect, useState } from "react";
 
-function History() {
+export default function History() {
   const [vitalsHistory, setVitalsHistory] = useState([]);
+  const [physioHistory, setPhysioHistory] = useState([]);
+  const [activeTab, setActiveTab] = useState("ALL"); // ALL, VITALS, PHYSIO
 
   useEffect(() => {
-    const saved = localStorage.getItem("vaidya_vitals_history");
+    const savedVitals = localStorage.getItem("vaidya_vitals_history");
+    if (savedVitals) {
+      try {
+        setVitalsHistory(JSON.parse(savedVitals));
+      } catch (e) {}
+    } else {
+      setVitalsHistory([
+        {
+          id: 1,
+          date: "21 Aug 2026",
+          time: "10:30 AM",
+          heartRate: "72",
+          spo2: "98",
+          temperature: "36.7",
+          bloodPressure: "120/80",
+          source: "ESP32 Sensor"
+        }
+      ]);
+    }
 
-    if (saved) {
-      setVitalsHistory(JSON.parse(saved));
+    const savedPhysio = localStorage.getItem("vaidya_physio_history");
+    if (savedPhysio) {
+      try {
+        setPhysioHistory(JSON.parse(savedPhysio));
+      } catch (e) {}
+    } else {
+      setPhysioHistory([
+        {
+          id: 101,
+          date: "21 Aug 2026",
+          time: "09:15 AM",
+          exercise: "Squats",
+          reps: 10,
+          targetReps: 10,
+          accuracy: 96,
+          duration: "02:45",
+        },
+        {
+          id: 102,
+          date: "20 Aug 2026",
+          time: "04:30 PM",
+          exercise: "Bicep Curls",
+          reps: 12,
+          targetReps: 12,
+          accuracy: 94,
+          duration: "03:10",
+        }
+      ]);
     }
   }, []);
 
   return (
-    <div className="dark-history-page">
-
+    <div className="history-page-container">
       {/* HEADER */}
-
-      <div className="history-main-header">
-
+      <header className="history-header">
         <div>
-          <span className="dark-eyebrow">
-            VAIDYA AI • PATIENT RECORD
-          </span>
-
-          <h1>My Health History</h1>
-
-          <p>
-            Your health and physiotherapy activity in one place.
-          </p>
+          <div className="dashboard-eyebrow">
+            <span>VAIDYA AI</span>
+            <span className="bullet">•</span>
+            <span>UNIFIED PATIENT TIMELINE</span>
+          </div>
+          <h1>Medical & Physiotherapy History</h1>
+          <p>Comprehensive chronological records of all vital readings, sensor streams, and AI exercise sessions.</p>
         </div>
 
-        <div className="history-count-box">
-
-          <strong>
-            {vitalsHistory.length}
-          </strong>
-
-          <span>
-            Vital Records
-          </span>
-
+        <div className="history-metrics-summary">
+          <div className="summary-pill">
+            <strong>{vitalsHistory.length}</strong>
+            <span>Vital Logs</span>
+          </div>
+          <div className="summary-pill purple">
+            <strong>{physioHistory.length}</strong>
+            <span>Physio Sessions</span>
+          </div>
         </div>
+      </header>
 
+      {/* FILTER TABS */}
+      <div className="history-tabs-bar">
+        <button
+          className={`h-tab ${activeTab === "ALL" ? "active" : ""}`}
+          onClick={() => setActiveTab("ALL")}
+        >
+          All Activity ({vitalsHistory.length + physioHistory.length})
+        </button>
+        <button
+          className={`h-tab ${activeTab === "VITALS" ? "active" : ""}`}
+          onClick={() => setActiveTab("VITALS")}
+        >
+          ❤️ Vitals Telemetry ({vitalsHistory.length})
+        </button>
+        <button
+          className={`h-tab ${activeTab === "PHYSIO" ? "active" : ""}`}
+          onClick={() => setActiveTab("PHYSIO")}
+        >
+          🧘 AI Physiotherapy ({physioHistory.length})
+        </button>
       </div>
 
-
-      {/* TWO CATEGORIES */}
-
-      <div className="history-category-grid">
-
-        <div className="history-category">
-
-          <div className="category-icon vitals">
-            ♥
-          </div>
-
-          <div>
-            <span>HEALTH MONITORING</span>
-
-            <h3>
-              Vitals History
-            </h3>
-
-            <p>
-              Heart rate, SpO₂, temperature and blood pressure readings.
-            </p>
-          </div>
-
-        </div>
-
-
-        <div className="history-category">
-
-          <div className="category-icon physio">
-            ◎
-          </div>
-
-          <div>
-            <span>RECOVERY & EXERCISE</span>
-
-            <h3>
-              Physiotherapy History
-            </h3>
-
-            <p>
-              Exercise sessions, repetitions, accuracy and feedback.
-            </p>
-          </div>
-
-        </div>
-
-      </div>
-
-
-      {/* VITAL HISTORY */}
-
-      <section className="history-content-card">
-
-        <div className="history-content-header">
-
-          <div>
-            <span>HEALTH MONITORING</span>
-
-            <h2>
-              Vitals History
-            </h2>
-          </div>
-
-          <div className="record-badge">
-            {vitalsHistory.length} Records
-          </div>
-
-        </div>
-
-
-        {vitalsHistory.length === 0 ? (
-
-          <div className="history-empty">
-
-            <div className="empty-icon">
-              ♥
+      {/* PHYSIOTHERAPY SECTION */}
+      {(activeTab === "ALL" || activeTab === "PHYSIO") && (
+        <div className="content-card">
+          <div className="card-header-flex">
+            <div>
+              <span className="card-kicker">MOTION BIOMECHANICS LOG</span>
+              <h2>Physiotherapy Workout Sessions</h2>
             </div>
-
-            <h3>
-              No health records yet
-            </h3>
-
-            <p>
-              Your readings will automatically appear here
-              when you update your vitals.
-            </p>
-
+            <span className="count-tag">{physioHistory.length} Completed</span>
           </div>
 
-        ) : (
-
-          <div className="history-table-container">
-
-            <div className="history-table-row history-table-header">
-
-              <span>Date</span>
-              <span>Time</span>
-              <span>Heart Rate</span>
-              <span>SpO₂</span>
-              <span>Temperature</span>
-              <span>Blood Pressure</span>
-
+          {physioHistory.length === 0 ? (
+            <div className="empty-history-placeholder">
+              <p>No physiotherapy sessions recorded yet. Start a session in the AI Physiotherapy module.</p>
             </div>
+          ) : (
+            <div className="physio-history-grid">
+              {physioHistory.map((item) => (
+                <div className="physio-session-card" key={item.id}>
+                  <div className="sess-card-top">
+                    <span className="sess-icon">🧘</span>
+                    <span className="accuracy-pill">
+                      {item.accuracy}% Accuracy
+                    </span>
+                  </div>
 
+                  <h3>{item.exercise}</h3>
+                  <div className="sess-stats">
+                    <div>
+                      <span>Reps Done:</span>
+                      <strong>{item.reps} / {item.targetReps || 10}</strong>
+                    </div>
+                    <div>
+                      <span>Duration:</span>
+                      <strong>{item.duration || "02:30"}</strong>
+                    </div>
+                  </div>
 
-            {vitalsHistory.map((record) => (
-
-              <div
-                className="history-table-row"
-                key={record.id}
-              >
-
-                <span>
-                  {record.date}
-                </span>
-
-                <span>
-                  {record.time}
-                </span>
-
-                <span>
-                  <b>{record.heartRate}</b> BPM
-                </span>
-
-                <span>
-                  <b>{record.spo2}</b>%
-                </span>
-
-                <span>
-                  <b>{record.temperature}</b>°C
-                </span>
-
-                <span>
-                  <b>{record.bloodPressure}</b>
-                </span>
-
-              </div>
-
-            ))}
-
-          </div>
-
-        )}
-
-      </section>
-
-
-      {/* PHYSIOTHERAPY */}
-
-      <section className="history-content-card">
-
-        <div className="history-content-header">
-
-          <div>
-            <span>RECOVERY & EXERCISE</span>
-
-            <h2>
-              Physiotherapy History
-            </h2>
-          </div>
-
-          <div className="record-badge purple">
-            Coming from sessions
-          </div>
-
+                  <div className="sess-date-footer">
+                    <span>📅 {item.date}</span>
+                    <span>⏱️ {item.time}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
+      )}
 
-
-        <div className="history-empty physio-empty">
-
-          <div className="empty-icon purple-icon">
-            ◎
+      {/* VITALS SECTION */}
+      {(activeTab === "ALL" || activeTab === "VITALS") && (
+        <div className="content-card">
+          <div className="card-header-flex">
+            <div>
+              <span className="card-kicker">PHYSIOLOGICAL TELEMETRY</span>
+              <h2>Vital Signs History</h2>
+            </div>
+            <span className="count-tag">{vitalsHistory.length} Logs</span>
           </div>
 
-          <h3>
-            No physiotherapy sessions yet
-          </h3>
-
-          <p>
-            Once you complete a physiotherapy session,
-            your exercise progress and feedback will appear here.
-          </p>
-
+          {vitalsHistory.length === 0 ? (
+            <div className="empty-history-placeholder">
+              <p>No vital logs found.</p>
+            </div>
+          ) : (
+            <div className="vitals-table-wrapper">
+              <table className="vitals-table">
+                <thead>
+                  <tr>
+                    <th>Date & Time</th>
+                    <th>Heart Rate</th>
+                    <th>SpO₂ Oxygen</th>
+                    <th>Temperature</th>
+                    <th>Blood Pressure</th>
+                    <th>Telemetry Source</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {vitalsHistory.map((v) => (
+                    <tr key={v.id}>
+                      <td>
+                        <strong>{v.date}</strong> <small className="text-dim">{v.time}</small>
+                      </td>
+                      <td><strong>{v.heartRate}</strong> BPM</td>
+                      <td><strong>{v.spo2}</strong>%</td>
+                      <td><strong>{v.temperature}</strong>°C</td>
+                      <td><strong>{v.bloodPressure}</strong></td>
+                      <td>
+                        <span className="source-tag">{v.source || "Sensor Reading"}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-
-      </section>
-
+      )}
     </div>
   );
 }
-
-export default History;

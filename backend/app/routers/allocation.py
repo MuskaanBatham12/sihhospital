@@ -19,7 +19,7 @@ from app.schemas.allocation import (
 
 from app.auth.roles import require_role, require_roles
 from app.services.allocation_service import rank_hospitals
-from app.auth.dependencies import get_current_user
+from app.auth.dependencies import get_current_user, get_optional_current_user
 
 
 router = APIRouter(
@@ -39,7 +39,7 @@ router = APIRouter(
 def rank_available_hospitals(
     request: AllocationRequest,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
+    current_user=Depends(get_optional_current_user)
 ):
 
     patient = db.query(Patient).filter(
@@ -339,7 +339,7 @@ def create_allocation(
 def automatic_allocation(
     request: AllocationRequest,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
+    current_user=Depends(get_optional_current_user)
 ):
     print("🔥 NEW ALLOCATION CODE IS RUNNING")
 

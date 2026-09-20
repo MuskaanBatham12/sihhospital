@@ -13,7 +13,7 @@ from app.models.emergency_request import EmergencyRequest
 from app.models.vital_reading import VitalReading
 from app.services.emergency_service import calculate_emergency_severity
 
-from app.auth.dependencies import get_current_user
+from app.auth.dependencies import get_current_user, get_optional_current_user
 from app.services.allocation_service import rank_hospitals
 
 router = APIRouter(
@@ -24,13 +24,13 @@ router = APIRouter(
 
 @router.post("/")
 def emergency_sos(
-    patient_id: int,
-    latitude: float,
-    longitude: float,
-    severity: str,
+    patient_id: int = 1,
+    latitude: float = 26.8467,
+    longitude: float = 80.9462,
+    severity: str = "HIGH",
     required_resource: str = "GENERAL_BED",
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
+    current_user=Depends(get_optional_current_user)
 ):
     # -----------------------------
     # 1. Check patient

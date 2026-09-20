@@ -1,18 +1,37 @@
 import API from "./api";
 
-export const getVitals = async (patientId) => {
-  const response = await API.get(
-    `/vitals/${patientId}`
-  );
-
-  return response.data;
+export const getVitals = async (patientId = 1) => {
+  try {
+    const response = await API.get(`/vitals/${patientId}`);
+    return response.data;
+  } catch (error) {
+    return null;
+  }
 };
 
 export const saveVitals = async (vitalData) => {
-  const response = await API.post(
-    "/vitals",
-    vitalData
-  );
+  try {
+    const response = await API.post("/vitals/", vitalData);
+    return response.data;
+  } catch (error) {
+    return null;
+  }
+};
 
-  return response.data;
+export const getHardwareTelemetry = async () => {
+  try {
+    const response = await API.get("/hardware/vitals/latest");
+    return response.data;
+  } catch (error) {
+    return null;
+  }
+};
+
+export const getHardwareStatus = async () => {
+  try {
+    const response = await API.get("/hardware/status");
+    return response.data;
+  } catch (error) {
+    return null;
+  }
 };

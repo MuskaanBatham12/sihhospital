@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import "./App.css";
 
 import {
@@ -8,6 +9,7 @@ import {
 } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
+import StartupAnimation from "./components/StartupAnimation";
 
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -18,8 +20,12 @@ import Physiotherapy from "./pages/Physiotherapy";
 import History from "./pages/History";
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
   return (
-    <BrowserRouter>
+    <>
+      {showSplash && <StartupAnimation onComplete={() => setShowSplash(false)} />}
+      <BrowserRouter>
 
       <Routes>
 
@@ -126,8 +132,8 @@ function App() {
         />
 
       </Routes>
-
     </BrowserRouter>
+    </>
   );
 }
 

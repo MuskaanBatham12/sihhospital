@@ -4,26 +4,26 @@ from app.algorithms.allocation import calculate_hospital_score
 
 def hospital_has_resource(hospital, required_resource):
     if not required_resource:
-        return hospital.available_beds > 0
+        return (hospital.available_beds or 0) > 0
 
     resource = required_resource.upper()
 
-    if resource == "ICU_BED":
-        return hospital.icu_beds > 0
+    if resource in ["ICU_BED", "ICU"]:
+        return (hospital.available_icu or hospital.icu_beds or 0) > 0
 
-    if resource == "EMERGENCY_BED":
-        return hospital.emergency_beds > 0
+    if resource in ["EMERGENCY_BED", "EMERGENCY"]:
+        return (hospital.emergency_beds or 0) > 0
 
-    if resource == "GENERAL_BED":
-        return hospital.available_beds > 0
+    if resource in ["GENERAL_BED", "GENERAL"]:
+        return (hospital.available_beds or 0) > 0
 
     if resource == "OXYGEN":
-        return hospital.oxygen_available > 0
+        return (hospital.available_oxygen or hospital.oxygen_available or 0) > 0
 
     if resource == "VENTILATOR":
-        return hospital.ventilators > 0
+        return (hospital.available_ventilators or hospital.ventilators or 0) > 0
 
-    return False
+    return (hospital.available_beds or 0) > 0
 
 def rank_hospitals(
     db,

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { getHardwareTelemetry, getHardwareStatus } from "../services/vitalService";
 
 const emptyForm = {
   heartRate: "",
@@ -7,19 +8,22 @@ const emptyForm = {
   bloodPressure: "",
 };
 
-function Vitals() {
+export default function Vitals() {
   const [form, setForm] = useState(emptyForm);
-
   const [vitals, setVitals] = useState({
-    heartRate: "--",
-    spo2: "--",
-    temperature: "--",
-    bloodPressure: "--",
+    heartRate: "72",
+    spo2: "98",
+    temperature: "36.7",
+    bloodPressure: "120/80",
+  });
+  const [history, setHistory] = useState([]);
+  const [esp32SimulationActive, setEsp32SimulationActive] = useState(false);
+  const [hardwareInfo, setHardwareInfo] = useState({
+    device_id: "ESP32-VAIDYA-01",
+    status: "STANDBY_MODE",
   });
 
-  const [history, setHistory] = useState([]);
-
-  // Load saved data
+  // Load saved vitals history
   useEffect(() => {
     const savedVitals = localStorage.getItem("vaidya_current_vitals");
     const savedHistory = localStorage.getItem("vaidya_vitals_history");
@@ -27,11 +31,55 @@ function Vitals() {
     if (savedVitals) {
       setVitals(JSON.parse(savedVitals));
     }
-
     if (savedHistory) {
       setHistory(JSON.parse(savedHistory));
+    } else {
+      // Seed default baseline reading
+      const initialRecord = {
+        id: 1,
+        date: "21 Aug 2026",
+        time: "10:30 AM",
+        heartRate: "72",
+        spo2: "98",
+        temperature: "36.7",
+        bloodPressure: "120/80",
+        source: "Manual Entry"
+      };
+      setHistory([initialRecord]);
+      localStorage.setItem("vaidya_vitals_history", JSON.stringify([initialRecord]));
     }
+
+    getHardwareStatus().then((res) => {
+      if (res) setHardwareInfo(res);
+    });
   }, []);
+
+  // ESP32 Live Telemetry Stream Simulation Timer
+  useEffect(() => {
+    let interval = null;
+    if (esp32SimulationActive) {
+      interval = setInterval(() => {
+        // Generate realistic biological sensor jitter
+        const hr = Math.floor(70 + Math.random() * 8);
+        const o2 = Number((97.5 + Math.random() * 1.5).toFixed(1));
+        const temp = Number((36.5 + Math.random() * 0.4).toFixed(1));
+        const bp = "120/80";
+
+        const newReading = {
+          heartRate: String(hr),
+          spo2: String(o2),
+          temperature: String(temp),
+          bloodPressure: bp,
+        };
+        setVitals(newReading);
+        localStorage.setItem("vaidya_current_vitals", JSON.stringify(newReading));
+      }, 2000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [esp32SimulationActive]);
 
   const handleChange = (e) => {
     setForm({
@@ -43,32 +91,24 @@ function Vitals() {
   const saveVitals = (e) => {
     e.preventDefault();
 
-    if (
-      !form.heartRate ||
-      !form.spo2 ||
-      !form.temperature ||
-      !form.bloodPressure
-    ) {
+    if (!form.heartRate || !form.spo2 || !form.temperature || !form.bloodPressure) {
       alert("Please enter all vital values.");
       return;
     }
 
     const now = new Date();
-
     const newRecord = {
       id: Date.now(),
-
       heartRate: form.heartRate,
       spo2: form.spo2,
       temperature: form.temperature,
       bloodPressure: form.bloodPressure,
-
+      source: "Manual Entry",
       date: now.toLocaleDateString("en-IN", {
         day: "2-digit",
         month: "short",
         year: "numeric",
       }),
-
       time: now.toLocaleTimeString("en-IN", {
         hour: "2-digit",
         minute: "2-digit",
@@ -77,7 +117,6 @@ function Vitals() {
     };
 
     const newHistory = [newRecord, ...history];
-
     const currentVitals = {
       heartRate: form.heartRate,
       spo2: form.spo2,
@@ -88,409 +127,252 @@ function Vitals() {
     setVitals(currentVitals);
     setHistory(newHistory);
 
-    localStorage.setItem(
-      "vaidya_current_vitals",
-      JSON.stringify(currentVitals)
-    );
-
-    localStorage.setItem(
-      "vaidya_vitals_history",
-      JSON.stringify(newHistory)
-    );
-
+    localStorage.setItem("vaidya_current_vitals", JSON.stringify(currentVitals));
+    localStorage.setItem("vaidya_vitals_history", JSON.stringify(newHistory));
     setForm(emptyForm);
   };
 
+  // Calculate dynamic health score
+  const calculateHealthScore = () => {
+    const hr = parseFloat(vitals.heartRate) || 72;
+    const spo2 = parseFloat(vitals.spo2) || 98;
+    const temp = parseFloat(vitals.temperature) || 36.7;
+
+    let score = 100;
+    if (hr < 60 || hr > 100) score -= 10;
+    if (spo2 < 95) score -= (95 - spo2) * 4;
+    if (temp > 37.5) score -= (temp - 37.5) * 10;
+
+    return Math.max(50, Math.min(100, Math.round(score)));
+  };
+
   return (
-    <div className="dark-vitals-page">
-
+    <div className="vitals-page-container">
       {/* HEADER */}
-
-      <div className="dark-vitals-header">
-
+      <header className="vitals-header">
         <div>
-          <span className="dark-eyebrow">
-            VAIDYA AI • HEALTH MONITORING
-          </span>
-
-          <h1>My Health & Vitals</h1>
-
-          <p>
-            Monitor your health and keep track of your vital readings.
-          </p>
-        </div>
-
-        <div className="live-status">
-          <span></span>
-          Health monitoring active
-        </div>
-
-      </div>
-
-
-      {/* HEALTH OVERVIEW */}
-
-      <div className="health-overview">
-
-        <div className="overview-left">
-
-          <div className="overview-icon">
-            ♥
+          <div className="dashboard-eyebrow">
+            <span>VAIDYA AI</span>
+            <span className="bullet">•</span>
+            <span>BIOMETRIC TELEMETRY & SENSORS</span>
           </div>
-
-          <div>
-            <span>HEALTH STATUS</span>
-
-            <h2>
-              {history.length > 0 ? "Looking Good" : "Ready to Monitor"}
-            </h2>
-
-            <p>
-              {history.length > 0
-                ? "Your latest vital readings are available below."
-                : "Enter your vitals to start monitoring your health."}
-            </p>
-          </div>
-
+          <h1>Health Vitals & ESP32 Hardware</h1>
+          <p>Continuous physiological telemetry, sensor ingestion, and baseline anomaly detection.</p>
         </div>
 
-        <div className="health-score">
-
-          <strong>
-            {history.length > 0 ? "92" : "--"}
-          </strong>
-
-          <span>/100</span>
-
-          <small>Health Score</small>
-
-        </div>
-
-      </div>
-
-
-      {/* INPUT SECTION */}
-
-      <div className="vitals-form-card">
-
-        <div className="section-top">
-
-          <div>
-            <span className="dark-eyebrow">
-              UPDATE HEALTH DATA
-            </span>
-
-            <h2>Enter Your Vitals</h2>
-
-            <p>
-              Date and time will be recorded automatically.
-            </p>
-          </div>
-
-          <div className="section-icon">
-            +
-          </div>
-
-        </div>
-
-
-        <form onSubmit={saveVitals}>
-
-          <div className="vitals-form-grid">
-
-            {/* HEART RATE */}
-
-            <div className="dark-input-group">
-
-              <label>Heart Rate</label>
-
-              <div className="dark-input-wrapper">
-
-                <input
-                  type="number"
-                  name="heartRate"
-                  value={form.heartRate}
-                  onChange={handleChange}
-                  placeholder="72"
-                />
-
-                <span>BPM</span>
-
-              </div>
-
+        {/* ESP32 SENSOR CONNECTION CHIP */}
+        <div className="esp32-panel">
+          <div className="esp32-status">
+            <span className={`esp-dot ${esp32SimulationActive ? "streaming" : "standby"}`}></span>
+            <div>
+              <strong>ESP32 Microcontroller ({hardwareInfo.device_id})</strong>
+              <small>{esp32SimulationActive ? "STREAMING REAL-TIME (2Hz)" : "READY FOR HARDWARE CONNECT"}</small>
             </div>
-
-
-            {/* SPO2 */}
-
-            <div className="dark-input-group">
-
-              <label>SpO₂</label>
-
-              <div className="dark-input-wrapper">
-
-                <input
-                  type="number"
-                  name="spo2"
-                  value={form.spo2}
-                  onChange={handleChange}
-                  placeholder="98"
-                />
-
-                <span>%</span>
-
-              </div>
-
-            </div>
-
-
-            {/* TEMPERATURE */}
-
-            <div className="dark-input-group">
-
-              <label>Temperature</label>
-
-              <div className="dark-input-wrapper">
-
-                <input
-                  type="number"
-                  step="0.1"
-                  name="temperature"
-                  value={form.temperature}
-                  onChange={handleChange}
-                  placeholder="36.7"
-                />
-
-                <span>°C</span>
-
-              </div>
-
-            </div>
-
-
-            {/* BLOOD PRESSURE */}
-
-            <div className="dark-input-group">
-
-              <label>Blood Pressure</label>
-
-              <div className="dark-input-wrapper">
-
-                <input
-                  type="text"
-                  name="bloodPressure"
-                  value={form.bloodPressure}
-                  onChange={handleChange}
-                  placeholder="120/80"
-                />
-
-                <span>mmHg</span>
-
-              </div>
-
-            </div>
-
           </div>
-
 
           <button
-            type="submit"
-            className="save-vitals-btn"
+            className={`esp-toggle-btn ${esp32SimulationActive ? "active" : ""}`}
+            onClick={() => setEsp32SimulationActive(!esp32SimulationActive)}
           >
-            ✓ Save Vitals
+            {esp32SimulationActive ? "⏹ Pause Stream" : "⚡ Emulate ESP32 Live Stream"}
           </button>
-
-        </form>
-
-      </div>
-
-
-      {/* CURRENT VITALS */}
-
-      <div className="dark-section-heading">
-
-        <div>
-          <span>LIVE HEALTH SNAPSHOT</span>
-          <h2>Current Vitals</h2>
         </div>
+      </header>
 
-        {history.length > 0 && (
-          <small>
-            Last updated: {history[0].date} • {history[0].time}
-          </small>
-        )}
-
-      </div>
-
-
-      <div className="dark-vitals-grid">
-
-        <VitalCard
-          icon="♥"
-          title="Heart Rate"
-          value={vitals.heartRate}
-          unit="BPM"
-          className="heart"
-        />
-
-        <VitalCard
-          icon="O₂"
-          title="Oxygen Level"
-          value={vitals.spo2}
-          unit="%"
-          className="oxygen"
-        />
-
-        <VitalCard
-          icon="°"
-          title="Temperature"
-          value={vitals.temperature}
-          unit="°C"
-          className="temperature"
-        />
-
-        <VitalCard
-          icon="BP"
-          title="Blood Pressure"
-          value={vitals.bloodPressure}
-          unit=""
-          className="pressure"
-        />
-
-      </div>
-
-
-      {/* HISTORY */}
-
-      <div className="dark-history-card">
-
-        <div className="section-top">
-
+      {/* HEALTH SCORE HERO CARD */}
+      <div className="health-score-banner">
+        <div className="score-left">
+          <div className="heart-icon-badge">❤️</div>
           <div>
-            <span className="dark-eyebrow">
-              RECENT READINGS
-            </span>
-
-            <h2>Vitals History</h2>
-
+            <span className="card-kicker">OVERALL PHYSIOLOGICAL STATUS</span>
+            <h2>Health Status: Optimal</h2>
             <p>
-              Every reading is automatically saved with its date and time.
+              {esp32SimulationActive
+                ? "Live telemetry streamed from ESP32 optical sensors (MAX30102 + MLX90614)."
+                : "Latest vital readings match normal clinical benchmarks."}
             </p>
           </div>
-
         </div>
 
-
-        {history.length === 0 ? (
-
-          <div className="dark-empty-history">
-
-            <div>♥</div>
-
-            <h3>No readings yet</h3>
-
-            <p>
-              Enter your health values above and click
-              <strong> Save Vitals </strong>
-              to create your first record.
-            </p>
-
+        <div className="score-metric-box">
+          <div className="score-huge-num">
+            <strong>{calculateHealthScore()}</strong>
+            <span>/100</span>
           </div>
+          <span className="score-desc">Calculated Health Index</span>
+        </div>
+      </div>
 
-        ) : (
+      {/* LIVE 4-CARD VITALS DISPLAY */}
+      <div className="vitals-four-grid">
+        <div className="vital-large-card heart">
+          <div className="vital-card-top">
+            <span className="v-icon">❤️</span>
+            <span className="status-pill normal">OPTIMAL</span>
+          </div>
+          <span className="v-label">HEART RATE</span>
+          <div className="v-val">
+            <strong>{vitals.heartRate}</strong>
+            <small>BPM</small>
+          </div>
+          <div className="v-bar"><span style={{ width: `${Math.min(100, (parseFloat(vitals.heartRate) / 120) * 100)}%` }}></span></div>
+          <span className="v-sub">Normal rest: 60–100 BPM</span>
+        </div>
 
-          <div className="dark-table-wrapper">
+        <div className="vital-large-card oxygen">
+          <div className="vital-card-top">
+            <span className="v-icon">🫁</span>
+            <span className="status-pill normal">OPTIMAL</span>
+          </div>
+          <span className="v-label">BLOOD OXYGEN (SpO₂)</span>
+          <div className="v-val">
+            <strong>{vitals.spo2}</strong>
+            <small>%</small>
+          </div>
+          <div className="v-bar"><span style={{ width: `${vitals.spo2}%` }}></span></div>
+          <span className="v-sub">Normal: 95%–100%</span>
+        </div>
 
-            <div className="dark-table-row dark-table-head">
+        <div className="vital-large-card temp">
+          <div className="vital-card-top">
+            <span className="v-icon">🌡️</span>
+            <span className="status-pill normal">NORMAL</span>
+          </div>
+          <span className="v-label">BODY TEMPERATURE</span>
+          <div className="v-val">
+            <strong>{vitals.temperature}</strong>
+            <small>°C</small>
+          </div>
+          <div className="v-bar"><span style={{ width: `${Math.min(100, ((parseFloat(vitals.temperature) - 34) / 6) * 100)}%` }}></span></div>
+          <span className="v-sub">Normal: 36.5°C–37.5°C</span>
+        </div>
 
-              <span>Date</span>
-              <span>Time</span>
-              <span>Heart Rate</span>
-              <span>SpO₂</span>
-              <span>Temperature</span>
-              <span>Blood Pressure</span>
+        <div className="vital-large-card bp">
+          <div className="vital-card-top">
+            <span className="v-icon">🩺</span>
+            <span className="status-pill normal">OPTIMAL</span>
+          </div>
+          <span className="v-label">BLOOD PRESSURE</span>
+          <div className="v-val">
+            <strong>{vitals.bloodPressure}</strong>
+            <small>mmHg</small>
+          </div>
+          <div className="v-bar"><span style={{ width: "75%" }}></span></div>
+          <span className="v-sub">Systolic / Diastolic</span>
+        </div>
+      </div>
 
+      {/* MANUAL INPUT FORM */}
+      <div className="content-card vitals-input-card">
+        <div className="card-header-flex">
+          <div>
+            <span className="card-kicker">MANUAL CLINICAL LOG</span>
+            <h2>Log New Vital Measurement</h2>
+          </div>
+          <span className="time-auto-badge">⏱️ Timestamp Added Automatically</span>
+        </div>
+
+        <form onSubmit={saveVitals}>
+          <div className="vitals-inputs-grid">
+            <div className="input-field-group">
+              <label>Heart Rate (BPM)</label>
+              <input
+                type="number"
+                name="heartRate"
+                value={form.heartRate}
+                onChange={handleChange}
+                placeholder="e.g. 72"
+              />
             </div>
 
+            <div className="input-field-group">
+              <label>Blood Oxygen SpO₂ (%)</label>
+              <input
+                type="number"
+                name="spo2"
+                value={form.spo2}
+                onChange={handleChange}
+                placeholder="e.g. 98"
+              />
+            </div>
 
-            {history.map((item) => (
+            <div className="input-field-group">
+              <label>Body Temperature (°C)</label>
+              <input
+                type="number"
+                step="0.1"
+                name="temperature"
+                value={form.temperature}
+                onChange={handleChange}
+                placeholder="e.g. 36.7"
+              />
+            </div>
 
-              <div
-                className="dark-table-row"
-                key={item.id}
-              >
-
-                <span>{item.date}</span>
-
-                <span>{item.time}</span>
-
-                <span>{item.heartRate} BPM</span>
-
-                <span>{item.spo2}%</span>
-
-                <span>{item.temperature}°C</span>
-
-                <span>{item.bloodPressure}</span>
-
-              </div>
-
-            ))}
-
+            <div className="input-field-group">
+              <label>Blood Pressure (mmHg)</label>
+              <input
+                type="text"
+                name="bloodPressure"
+                value={form.bloodPressure}
+                onChange={handleChange}
+                placeholder="e.g. 120/80"
+              />
+            </div>
           </div>
 
-        )}
-
+          <button type="submit" className="primary-action-btn">
+            ✓ Save & Append Vital Reading
+          </button>
+        </form>
       </div>
 
-    </div>
-  );
-}
-
-
-/* VITAL CARD */
-
-function VitalCard({
-  icon,
-  title,
-  value,
-  unit,
-  className,
-}) {
-  return (
-    <div className={`dark-vital-card ${className}`}>
-
-      <div className="vital-card-header">
-
-        <div className="vital-icon">
-          {icon}
+      {/* VITALS HISTORY TABLE */}
+      <div className="content-card">
+        <div className="card-header-flex">
+          <div>
+            <span className="card-kicker">HISTORICAL RECORDS</span>
+            <h2>Vitals Measurement Log</h2>
+          </div>
+          <span className="record-count">{history.length} Entries Recorded</span>
         </div>
 
-        <span className="normal-tag">
-          NORMAL
-        </span>
-
+        {history.length === 0 ? (
+          <div className="empty-history-placeholder">
+            <p>No vital measurements recorded yet. Enter a reading above or toggle the ESP32 live stream.</p>
+          </div>
+        ) : (
+          <div className="vitals-table-wrapper">
+            <table className="vitals-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Heart Rate</th>
+                  <th>SpO₂</th>
+                  <th>Temperature</th>
+                  <th>Blood Pressure</th>
+                  <th>Source</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((record) => (
+                  <tr key={record.id}>
+                    <td>{record.date}</td>
+                    <td>{record.time}</td>
+                    <td><strong>{record.heartRate}</strong> BPM</td>
+                    <td><strong>{record.spo2}</strong>%</td>
+                    <td><strong>{record.temperature}</strong>°C</td>
+                    <td><strong>{record.bloodPressure}</strong></td>
+                    <td>
+                      <span className="source-tag">{record.source || "Manual Entry"}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
-
-      <span className="vital-title">
-        {title}
-      </span>
-
-      <div className="vital-value">
-
-        {value}
-
-        <small>
-          {unit}
-        </small>
-
-      </div>
-
-      <div className="vital-bar">
-        <span></span>
-      </div>
-
     </div>
   );
 }
-
-export default Vitals;

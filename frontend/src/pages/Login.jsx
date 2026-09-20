@@ -1,159 +1,144 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-function Login() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [number, setNumber] = useState("");
-  const [age, setAge] = useState("");
-  const [nationality, setNationality] = useState("");
-  const [bloodType, setBloodType] = useState("");
-  const [weight, setWeight] = useState("");
-  const [height, setHeight] = useState("");
+export default function Login() {
+  const [name, setName] = useState("Dr. Muskaan Batham");
+  const [email, setEmail] = useState("muskaan@vaidya.ai");
+  const [phone, setPhone] = useState("+91 9876543210");
+  const [age, setAge] = useState("24");
+  const [bloodType, setBloodType] = useState("O+");
+  const [weight, setWeight] = useState("65");
+  const [height, setHeight] = useState("172");
+  const [role, setRole] = useState("patient");
 
   const navigate = useNavigate();
 
   const handleLogin = (e) => {
     e.preventDefault();
-
     if (!name.trim()) {
-      alert("Please enter your name");
+      alert("Please enter full patient name");
       return;
     }
 
-    // Keep the existing user name storage
-    localStorage.setItem(
-      "vaidyaUser",
-      name.trim()
-    );
-
-    // Save complete patient profile
-    const patientProfile = {
-      name: name.trim(),
-      email,
-      number,
-      age,
-      nationality,
-      bloodType,
-      weight,
-      height,
-    };
-
+    localStorage.setItem("vaidyaUser", name.trim());
     localStorage.setItem(
       "vaidyaPatientProfile",
-      JSON.stringify(patientProfile)
+      JSON.stringify({
+        name: name.trim(),
+        email,
+        phone,
+        age,
+        bloodType,
+        weight,
+        height,
+        role,
+      })
     );
 
-    // SAME PATH — DO NOT CHANGE
     navigate("/dashboard");
   };
 
   return (
-    <div className="login-page">
+    <div className="login-fullscreen-bg">
+      <div className="login-card-container">
+        {/* BRAND HEADER */}
+        <div className="login-brand-header">
+          <div className="login-cross-icon">✚</div>
+          <h1>VAIDYA AI</h1>
+          <p>VIRTUAL HEALTHCARE & INTELLIGENT PHYSIOTHERAPY SYSTEM</p>
+        </div>
 
-      <div className="login-form">
+        <form className="login-form-body" onSubmit={handleLogin}>
+          <div className="form-row-2">
+            <div className="form-group">
+              <label>Full Name / Patient Name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Full Name"
+                required
+              />
+            </div>
 
-        <h1>VAIDYA AI</h1>
+            <div className="form-group">
+              <label>Email Address</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email Address"
+              />
+            </div>
+          </div>
 
-        <p>
-          Your intelligent healthcare companion
-        </p>
+          <div className="form-row-3">
+            <div className="form-group">
+              <label>Age</label>
+              <input
+                type="number"
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                placeholder="Age"
+              />
+            </div>
 
-        <form onSubmit={handleLogin}>
+            <div className="form-group">
+              <label>Blood Group</label>
+              <select value={bloodType} onChange={(e) => setBloodType(e.target.value)}>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+              </select>
+            </div>
 
-          {/* NAME */}
-          <input
-            type="text"
-            placeholder="Full Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
+            <div className="form-group">
+              <label>Mobile Number</label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Mobile"
+              />
+            </div>
+          </div>
 
-          {/* EMAIL */}
-          <input
-            type="email"
-            placeholder="Email Address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+          <div className="form-row-2">
+            <div className="form-group">
+              <label>Weight (kg)</label>
+              <input
+                type="number"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                placeholder="65"
+              />
+            </div>
 
-          {/* PHONE */}
-          <input
-            type="tel"
-            placeholder="Mobile Number"
-            value={number}
-            onChange={(e) => setNumber(e.target.value)}
-          />
+            <div className="form-group">
+              <label>Height (cm)</label>
+              <input
+                type="number"
+                value={height}
+                onChange={(e) => setHeight(e.target.value)}
+                placeholder="172"
+              />
+            </div>
+          </div>
 
-          {/* AGE */}
-          <input
-            type="number"
-            placeholder="Age"
-            min="1"
-            max="120"
-            value={age}
-            onChange={(e) => setAge(e.target.value)}
-          />
-
-          {/* NATIONALITY */}
-          <input
-            type="text"
-            placeholder="Nationality"
-            value={nationality}
-            onChange={(e) => setNationality(e.target.value)}
-          />
-
-          {/* BLOOD TYPE */}
-          <select
-            value={bloodType}
-            onChange={(e) => setBloodType(e.target.value)}
-          >
-            <option value="">
-              Select Blood Type
-            </option>
-
-            <option value="A+">A+</option>
-            <option value="A-">A-</option>
-            <option value="B+">B+</option>
-            <option value="B-">B-</option>
-            <option value="AB+">AB+</option>
-            <option value="AB-">AB-</option>
-            <option value="O+">O+</option>
-            <option value="O-">O-</option>
-          </select>
-
-          {/* WEIGHT */}
-          <input
-            type="number"
-            placeholder="Weight (kg)"
-            min="1"
-            max="500"
-            value={weight}
-            onChange={(e) => setWeight(e.target.value)}
-          />
-
-          {/* HEIGHT */}
-          <input
-            type="number"
-            placeholder="Height (cm)"
-            min="30"
-            max="250"
-            value={height}
-            onChange={(e) => setHeight(e.target.value)}
-          />
-
-          {/* SAME SUBMIT BUTTON */}
-          <button type="submit">
-            Continue
+          <button type="submit" className="login-submit-btn">
+            Enter Healthcare Portal →
           </button>
-
         </form>
 
+        <div className="login-footer-info">
+          <span>🔒 End-to-End Encrypted Health Records • AI Motion Biomechanics Ready</span>
+        </div>
       </div>
-
     </div>
   );
 }
-
-export default Login;
